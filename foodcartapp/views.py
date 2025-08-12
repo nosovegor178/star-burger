@@ -1,8 +1,11 @@
+from django.db.models import Max
 from django.http import JsonResponse
 from django.templatetags.static import static
-from rest_framework import status
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.serializers import PrimaryKeyRelatedField
+from rest_framework.serializers import ModelSerializer
 
 
 import json
@@ -64,29 +67,38 @@ def product_list_api(request):
     })
 
 
+class OrderItemSerializer(ModelSerializer):
+    product = PrimaryKeyRelatedField(queryset=Product.objects.all())
+    
+    class Meta:
+        model = OrderItem
+        fields = ['product', 'quantity']
+        max_id = Product.objects.aggregate(Max('id'))['id__max']
+        extra_kwargs = {
+            'quantity': {'min_value': 1},
+            'product': {'min_value': 1, 'max_value': max_id}
+        }
+
+class OrderSerializer(ModelSerializer):
+    products = OrderItemSerializer(many=True)
+    phonenumber = PhoneNumberField()
+    
+    class Meta:
+        model = Order
+        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+
+
 @api_view(['POST'])
 def register_order(request):
-    # TODO это лишь заглушка
     response = request.data
+    serializer = OrderSerializer(data=response)
+    serializer.is_valid(raise_exception=True)
+
     order = Order.objects.create(
         firstname=response['firstname'],
         lastname=response['lastname'],
         phonenumber=response['phonenumber'],
-        adress=response['address'],
-    )
-    try:
-        if not response['products']:
-            return Response({'products': 'Это поле не может быть пустым'},
-                            status=status.HTTP_404_NOT_FOUND)
-        if not isinstance(response['products'], list):
-            return Response({'products': 'Ожидался list со значениями'},
-                            status=status.HTTP_404_NOT_FOUND)
-        if response['products']==[]:
-            return Response({'products': 'Этот список не может быть пустым'},
-                            status=status.HTTP_404_NOT_FOUND)
-    except KeyError:
-        return Response({'products': 'Обязательное поле'},
-                            status=status.HTTP_404_NOT_FOUND)
+        adress=response['address'],)
     for product in response['products']:
         OrderItem.objects.create(
             order=order,

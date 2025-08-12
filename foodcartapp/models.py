@@ -137,7 +137,7 @@ class Order(models.Model):
         region='RU',
         verbose_name='Номер телефона',
     )
-    adress = models.CharField(
+    address = models.CharField(
         verbose_name='Адрес',
         max_length=100
     )
@@ -152,7 +152,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order,
-                              related_name='items',
+                              related_name='products',
                               on_delete=models.CASCADE)
     product = models.ForeignKey(Product,
                                 on_delete=models.CASCADE)
