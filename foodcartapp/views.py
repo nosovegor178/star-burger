@@ -90,5 +90,5 @@ def register_order(request):
         product_serializer = OrderItemSerializer(data=product)
         product_serializer.is_valid(raise_exception=True)
     print(serializer.data)
-    
+
     return Response(serializer.data)
