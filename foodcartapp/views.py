@@ -2,6 +2,7 @@ from django.db.models import Max
 from django.http import JsonResponse
 from django.templatetags.static import static
 from phonenumber_field.serializerfields import PhoneNumberField
+# from rest_framework import serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.serializers import IntegerField
@@ -91,4 +92,15 @@ def register_order(request):
         product_serializer.is_valid(raise_exception=True)
     print(serializer.data)
 
+    order = Order.objects.create(
+        firstname=response['firstname'],
+        lastname=response['lastname'],
+        phonenumber=response['phonenumber'],
+        address=response['address'],)
+    for product in response['products']:
+        OrderItem.objects.create(
+            order=order,
+            product=Product.objects.get(id=product['product']),
+            quantity=product['quantity']
+        )
     return Response(serializer.data)
