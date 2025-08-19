@@ -4,8 +4,8 @@ from django.templatetags.static import static
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import PrimaryKeyRelatedField
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import IntegerField
+from rest_framework.serializers import ModelSerializer, Serializer
 
 
 import json
@@ -67,25 +67,18 @@ def product_list_api(request):
     })
 
 
-class OrderItemSerializer(ModelSerializer):
-    product = PrimaryKeyRelatedField(queryset=Product.objects.all())
-    
-    class Meta:
-        model = OrderItem
-        fields = ['product', 'quantity']
-        max_id = Product.objects.aggregate(Max('id'))['id__max']
-        extra_kwargs = {
-            'quantity': {'min_value': 1},
-            'product': {'min_value': 1, 'max_value': max_id}
-        }
+class OrderItemSerializer(Serializer):
+    max_id = Product.objects.aggregate(Max('id'))['id__max']
+    product = IntegerField(min_value=1, max_value=max_id)
+    quantity = IntegerField(min_value=1)
+
 
 class OrderSerializer(ModelSerializer):
-    products = OrderItemSerializer(many=True)
     phonenumber = PhoneNumberField()
-    
+    id = IntegerField(read_only=True)
     class Meta:
         model = Order
-        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address']
 
 
 @api_view(['POST'])
@@ -93,16 +86,9 @@ def register_order(request):
     response = request.data
     serializer = OrderSerializer(data=response)
     serializer.is_valid(raise_exception=True)
-
-    order = Order.objects.create(
-        firstname=response['firstname'],
-        lastname=response['lastname'],
-        phonenumber=response['phonenumber'],
-        adress=response['address'],)
     for product in response['products']:
-        OrderItem.objects.create(
-            order=order,
-            product=Product.objects.get(id=product['product']),
-            quantity=product['quantity']
-        )
-    return Response(response)
+        product_serializer = OrderItemSerializer(data=product)
+        product_serializer.is_valid(raise_exception=True)
+    print(serializer.data)
+    
+    return Response(serializer.data)
