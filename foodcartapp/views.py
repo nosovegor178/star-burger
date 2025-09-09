@@ -2,11 +2,9 @@ from django.db.models import Max
 from django.http import JsonResponse
 from django.templatetags.static import static
 from phonenumber_field.serializerfields import PhoneNumberField
-# from rest_framework import serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import IntegerField
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import IntegerField, ModelSerializer, Serializer, DecimalField
 
 
 import json
@@ -75,11 +73,12 @@ class OrderItemSerializer(Serializer):
 
 
 class OrderSerializer(ModelSerializer):
+    order_sum = DecimalField(max_digits=10, decimal_places=2, read_only=True)
     phonenumber = PhoneNumberField()
     id = IntegerField(read_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address']
+        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'order_sum']
 
 
 @api_view(['POST'])
@@ -87,20 +86,16 @@ def register_order(request):
     response = request.data
     serializer = OrderSerializer(data=response)
     serializer.is_valid(raise_exception=True)
+    order = serializer.save()
     for product in response['products']:
-        product_serializer = OrderItemSerializer(data=product)
-        product_serializer.is_valid(raise_exception=True)
-    print(serializer.data)
-
-    order = Order.objects.create(
-        firstname=response['firstname'],
-        lastname=response['lastname'],
-        phonenumber=response['phonenumber'],
-        address=response['address'],)
-    for product in response['products']:
+        order_serializer = OrderItemSerializer(data=product)
+        order_serializer.is_valid(raise_exception=True)
         OrderItem.objects.create(
             order=order,
             product=Product.objects.get(id=product['product']),
             quantity=product['quantity']
         )
+    print(serializer.data)
+
+        
     return Response(serializer.data)

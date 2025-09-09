@@ -118,4 +118,8 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [
         OrderInline
     ]
+    def get_order_sum(self, obj):
+        return f"{obj.order_sum:.2f} руб."
+    get_order_sum.short_description = 'Сумма заказа'
+    get_order_sum.admin_order_field = 'order_sum'
     exclude = ('products',)
