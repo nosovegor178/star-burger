@@ -103,14 +103,17 @@ class ProductAdmin(admin.ModelAdmin):
     get_image_list_preview.short_description = 'превью'
 
 
+
+
 @admin.register(ProductCategory)
-class ProductAdmin(admin.ModelAdmin):
+class ProductCategoryAdmin(admin.ModelAdmin):
     pass
 
 
 class OrderInline(admin.TabularInline):
     model = OrderItem
-    fields = ['product', 'quantity']
+    fields = ['product', 'price', 'quantity']
+    readonly_fields = ['price']
 
 
 @admin.register(Order)
@@ -118,8 +121,16 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [
         OrderInline
     ]
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.price = instance.product.price
+            instance.save()
+        
     def get_order_sum(self, obj):
         return f"{obj.order_sum:.2f} руб."
+    
     get_order_sum.short_description = 'Сумма заказа'
     get_order_sum.admin_order_field = 'order_sum'
     exclude = ('products',)
