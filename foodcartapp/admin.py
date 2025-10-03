@@ -1,7 +1,10 @@
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
+from django.template import RequestContext
 from django.templatetags.static import static
 from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .models import Product
 from .models import ProductCategory
@@ -121,6 +124,14 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [
         OrderInline
     ]
+
+    def response_change(self, request, obj):
+        if url_has_allowed_host_and_scheme(request.GET['next'], request.META['HTTP_HOST']):
+            res = super().response_change(request, obj)
+            if "next" in request.GET:
+                return HttpResponseRedirect(request.GET['next'])
+            else:
+                return res
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
