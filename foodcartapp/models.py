@@ -133,6 +133,12 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('ACTD', 'Принятый'),
+        ('PRCD', 'В обработке'),
+        ('DLVR', 'Доставляется'),
+        ('DLRD', 'Выполнен')
+    ]
     firstname = models.CharField(
         verbose_name='Имя',
         max_length=50
@@ -149,8 +155,13 @@ class Order(models.Model):
         verbose_name='Адрес',
         max_length=100
     )
+    status = models.CharField(
+        max_length=4,
+        choices=STATUS_CHOICES,
+        db_index=True,
+        default='ACTD'
+    )
     objects = OrderQuerySet.as_manager()
-
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
