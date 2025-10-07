@@ -159,7 +159,12 @@ class Order(models.Model):
         max_length=4,
         choices=STATUS_CHOICES,
         db_index=True,
-        default='ACTD'
+        default='ACTD',
+        verbose_name='Статус'
+    )
+    comments = models.TextField(
+        default='',
+        verbose_name='Комментарии'
     )
     objects = OrderQuerySet.as_manager()
     class Meta:
