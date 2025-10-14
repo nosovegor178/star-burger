@@ -136,9 +136,13 @@ class OrderQuerySet(models.QuerySet):
 class Order(models.Model):
     STATUS_CHOICES = [
         ('ACTD', 'Принятый'),
-        ('PRCD', 'В обработке'),
+        ('PRCD', 'Готовится'),
         ('DLVR', 'Доставляется'),
         ('DLRD', 'Выполнен')
+    ]
+    PAYMENT_WAY_CHOICES = [
+        ('CASH', 'Наличными'),
+        ('ELCT', 'Безналично')
     ]
     firstname = models.CharField(
         verbose_name='Имя',
@@ -159,9 +163,16 @@ class Order(models.Model):
     status = models.CharField(
         max_length=4,
         choices=STATUS_CHOICES,
+         default='ACTD',
         db_index=True,
-        default='ACTD',
         verbose_name='Статус'
+    )
+    payment_way = models.CharField(
+        max_length=4,
+        choices=PAYMENT_WAY_CHOICES,
+        default='ELCT',
+        db_index=True,
+        verbose_name='Способ оплаты'
     )
     registered_at = models.DateTimeField(
         verbose_name='Принят',
