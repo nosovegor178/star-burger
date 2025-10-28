@@ -131,14 +131,15 @@ class OrderAdminForm(forms.ModelForm):
             cleaned_data['status'] = 'PRCD'
         return cleaned_data
     
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     available_rests = self.returns_ready_restaurants() ---- Не работает 
-    #     self.fields['status'].choices = [
-    #         (f'{num+1}RES', rest[0]) for num, rest in enumerate(list(
-    #         Restaurant.objects.all().values_list('name')))
-    #         if rest in available_rests
-    #     ]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        available_rests = Order.objects.filter(id=self.instance.id)\
+            .returns_ready_restaurants()[0].ready_restaurants
+        self.fields['restaurant'].choices = [
+            (f'{num+1}RES', rest)
+            for num, rest in enumerate(available_rests)
+        ]
 
 
 @admin.register(Order)
