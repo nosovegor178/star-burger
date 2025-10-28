@@ -131,6 +131,22 @@ class OrderQuerySet(models.QuerySet):
         return self.annotate(
             order_sum=Sum(F('products__price') * F('products__quantity'))
         )
+    
+    def returns_ready_restaurants(self):
+        for order in self:
+            needed_restaurants = []
+            for product in order.products.all():
+                needed_restaurants_for_product = []
+                for menu_item in RestaurantMenuItem.objects.filter(
+                    product = product.product
+                ):
+                    needed_restaurants_for_product.append(
+                        menu_item.restaurant.name
+                        )
+                needed_restaurants.append(set(needed_restaurants_for_product))
+            ready_restaurants = list(set.intersection(*needed_restaurants))
+            order.ready_restaurants = ready_restaurants
+        return self
 
 
 class Order(models.Model):
@@ -174,6 +190,15 @@ class Order(models.Model):
         db_index=True,
         verbose_name='Способ оплаты'
     )
+    restaurant = models.CharField(
+        max_length=4,
+        choices=[(f'{num+1}RES', n[0]) for num, n in enumerate(list(
+            Restaurant.objects.all().values_list('name')
+            ))],
+        db_index=True,
+        verbose_name='Какой ресторан будет готовить',
+        blank=True
+    )
     registered_at = models.DateTimeField(
         verbose_name='Принят',
         default=timezone.now,
@@ -192,6 +217,7 @@ class Order(models.Model):
     )
     comments = models.TextField(
         default='',
+        blank=True,
         verbose_name='Комментарии'
     )
     objects = OrderQuerySet.as_manager()

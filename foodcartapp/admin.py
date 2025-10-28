@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
@@ -119,12 +120,33 @@ class OrderInline(admin.TabularInline):
     readonly_fields = ['price']
 
 
+class OrderAdminForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('restaurant'):
+            cleaned_data['status'] = 'PRCD'
+        return cleaned_data
+    
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     available_rests = self.returns_ready_restaurants() ---- Не работает 
+    #     self.fields['status'].choices = [
+    #         (f'{num+1}RES', rest[0]) for num, rest in enumerate(list(
+    #         Restaurant.objects.all().values_list('name')))
+    #         if rest in available_rests
+    #     ]
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     inlines = [
         OrderInline
     ]
-
+    form = OrderAdminForm
     def response_change(self, request, obj):
         if url_has_allowed_host_and_scheme(request.GET['next'], request.META['HTTP_HOST']):
             res = super().response_change(request, obj)
@@ -145,3 +167,4 @@ class OrderAdmin(admin.ModelAdmin):
     get_order_sum.short_description = 'Сумма заказа'
     get_order_sum.admin_order_field = 'order_sum'
     exclude = ('products',)
+

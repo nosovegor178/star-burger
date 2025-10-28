@@ -93,6 +93,5 @@ def view_restaurants(request):
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     return render(request, template_name='order_items.html', context={
-        'orders': Order.objects.returns_order_price()
-
+        'orders': Order.objects.returns_order_price().returns_ready_restaurants()
     })
