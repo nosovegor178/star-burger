@@ -132,6 +132,8 @@ class OrderQuerySet(models.QuerySet):
             order_sum=Sum(F('products__price') * F('products__quantity'))
         )
     
+    
+
     def returns_ready_restaurants(self):
         for order in self:
             needed_restaurants = []

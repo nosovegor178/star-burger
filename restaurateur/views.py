@@ -1,12 +1,13 @@
 from django import forms
-from django.shortcuts import redirect, render
-from django.views import View
-from django.urls import reverse_lazy
+from django.conf import settings
 from django.contrib.auth.decorators import user_passes_test
-
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
+from django.views import View
+from geopy import distance
+import requests
 
 from foodcartapp.models import Product, Restaurant, Order
 
@@ -63,6 +64,50 @@ def is_manager(user):
     return user.is_staff  # FIXME replace with specific permission
 
 
+def fetch_coordinates(apikey, address):
+    try:
+        base_url = "https://geocode-maps.yandex.ru/1.x"
+        response = requests.get(base_url, params={
+            "geocode": address,
+            "apikey": apikey,
+            "format": "json",
+        })
+        response.raise_for_status()
+        found_places = response.json()['response']['GeoObjectCollection']\
+            ['featureMember']
+
+        if not found_places:
+            return None
+
+        most_relevant = found_places[0]
+        lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+        return lat, lon
+    except requests.HTTPError:
+        return None
+
+
+def fetch_orders_with_distance_to_restaurants(orders):
+    for order in orders:
+        address_coords = fetch_coordinates(settings.YANDEX_API_KEY, order.address)
+        restaurants = order.ready_restaurants
+        if not address_coords:
+            for i, restaurant in enumerate(restaurants):
+                restaurants[i] += ', ошибка определения координат'
+            order.ready_restaurants = restaurants
+        else:
+            for i, restaurant in enumerate(restaurants):
+                restaurant_coords = fetch_coordinates(settings.YANDEX_API_KEY,
+                                                    restaurant)
+                if not restaurant_coords:
+                    restaurants[i] += ', ошибка определения координат'
+                else:
+                    restaurants[i] += ', {} км'.format(
+                        distance.distance(restaurant_coords, address_coords).km
+                    )
+            order.ready_restaurants = sorted(restaurants)
+    return orders
+    
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_products(request):
     restaurants = list(Restaurant.objects.order_by('name'))
@@ -93,5 +138,6 @@ def view_restaurants(request):
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     return render(request, template_name='order_items.html', context={
-        'orders': Order.objects.returns_order_price().returns_ready_restaurants()
+        'orders': fetch_orders_with_distance_to_restaurants(
+            Order.objects.returns_order_price().returns_ready_restaurants())
     })

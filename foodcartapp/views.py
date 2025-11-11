@@ -79,7 +79,12 @@ class OrderSerializer(ModelSerializer):
     id = IntegerField(read_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'order_sum']
+        fields = ['id',
+                  'firstname',
+                  'lastname',
+                  'phonenumber',
+                  'address',
+                  'order_sum']
 
 
 @api_view(['POST'])
@@ -99,7 +104,5 @@ def register_order(request):
             quantity=product_item['quantity'],
             price=product.price
         )
-    print(serializer.data)
-
-        
+    fetched 
     return Response(serializer.data)
