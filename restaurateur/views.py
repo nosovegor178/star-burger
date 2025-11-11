@@ -101,7 +101,8 @@ def fetch_coordinates(apikey, address):
 
 def fetch_orders_with_distance_to_restaurants(orders):
     for order in orders:
-        address_coords = fetch_coordinates(settings.YANDEX_API_KEY, order.address)
+        address_coords = fetch_coordinates(settings.YANDEX_API_KEY,
+                                           order.address)
         restaurants = order.ready_restaurants
         if not address_coords:
             for i, restaurant in enumerate(restaurants):
@@ -110,16 +111,17 @@ def fetch_orders_with_distance_to_restaurants(orders):
         else:
             for i, restaurant in enumerate(restaurants):
                 restaurant_coords = fetch_coordinates(settings.YANDEX_API_KEY,
-                                                    restaurant)
+                                                      restaurant)
                 if not restaurant_coords:
                     restaurants[i] += ', ошибка определения координат'
                 else:
                     restaurants[i] += ', {} км'.format(
-                        distance.distance(restaurant_coords, address_coords).km
+                        distance.distance(restaurant_coords,
+                                          address_coords).km
                     )
             order.ready_restaurants = sorted(restaurants)
     return orders
-    
+
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_products(request):

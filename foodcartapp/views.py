@@ -5,14 +5,10 @@ from django.templatetags.static import static
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import IntegerField, ModelSerializer, Serializer, DecimalField
-
-
-import json
-
+from rest_framework.serializers import IntegerField,\
+    ModelSerializer, Serializer, DecimalField
 
 from .models import Product, Order, OrderItem
-
 
 
 def banners_list_api(request):
@@ -77,6 +73,7 @@ class OrderSerializer(ModelSerializer):
     order_sum = DecimalField(max_digits=10, decimal_places=2, read_only=True)
     phonenumber = PhoneNumberField()
     id = IntegerField(read_only=True)
+
     class Meta:
         model = Order
         fields = ['id',
@@ -104,5 +101,4 @@ def register_order(request):
             quantity=product_item['quantity'],
             price=product.price
         )
-    fetched 
     return Response(serializer.data)

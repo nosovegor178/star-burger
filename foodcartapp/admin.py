@@ -2,7 +2,6 @@ from django import forms
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
-from django.template import RequestContext
 from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -52,8 +51,6 @@ class ProductAdmin(admin.ModelAdmin):
         'category',
     ]
     search_fields = [
-        # FIXME SQLite can not convert letter case for cyrillic words properly, so search will be buggy.
-        # Migration to PostgreSQL is necessary
         'name',
         'category__name',
     ]
@@ -96,17 +93,19 @@ class ProductAdmin(admin.ModelAdmin):
     def get_image_preview(self, obj):
         if not obj.image:
             return 'выберите картинку'
-        return format_html('<img src="{url}" style="max-height: 200px;"/>', url=obj.image.url)
+        return format_html('<img src="{url}" style="max-height: 200px;"/>',
+                           url=obj.image.url)
     get_image_preview.short_description = 'превью'
 
     def get_image_list_preview(self, obj):
         if not obj.image or not obj.id:
             return 'нет картинки'
         edit_url = reverse('admin:foodcartapp_product_change', args=(obj.id,))
-        return format_html('<a href="{edit_url}"><img src="{src}" style="max-height: 50px;"/></a>', edit_url=edit_url, src=obj.image.url)
+        return format_html('<a href="{edit_url}"><img src="{src}" '\
+                           'style="max-height: 50px;"/></a>',
+                           edit_url=edit_url,
+                           src=obj.image.url)
     get_image_list_preview.short_description = 'превью'
-
-
 
 
 @admin.register(ProductCategory)
@@ -130,10 +129,10 @@ class OrderAdminForm(forms.ModelForm):
         if cleaned_data.get('restaurant'):
             cleaned_data['status'] = 'PRCD'
         return cleaned_data
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         available_rests = Order.objects.filter(id=self.instance.id)\
             .returns_ready_restaurants()[0].ready_restaurants
         self.fields['restaurant'].choices = [
@@ -148,8 +147,10 @@ class OrderAdmin(admin.ModelAdmin):
         OrderInline
     ]
     form = OrderAdminForm
+
     def response_change(self, request, obj):
-        if url_has_allowed_host_and_scheme(request.GET['next'], request.META['HTTP_HOST']):
+        if url_has_allowed_host_and_scheme(request.GET['next'],
+                                           request.META['HTTP_HOST']):
             res = super().response_change(request, obj)
             if "next" in request.GET:
                 return HttpResponseRedirect(request.GET['next'])
@@ -161,11 +162,10 @@ class OrderAdmin(admin.ModelAdmin):
         for instance in instances:
             instance.price = instance.product.price
             instance.save()
-        
+
     def get_order_sum(self, obj):
         return f"{obj.order_sum:.2f} руб."
-    
+
     get_order_sum.short_description = 'Сумма заказа'
     get_order_sum.admin_order_field = 'order_sum'
     exclude = ('products',)
-

@@ -131,8 +131,6 @@ class OrderQuerySet(models.QuerySet):
         return self.annotate(
             order_sum=Sum(F('products__price') * F('products__quantity'))
         )
-    
-    
 
     def returns_ready_restaurants(self):
         for order in self:
@@ -140,7 +138,7 @@ class OrderQuerySet(models.QuerySet):
             for product in order.products.all().select_related('product'):
                 needed_restaurants_for_product = []
                 for menu_item in RestaurantMenuItem.objects.filter(
-                    product = product.product
+                    product=product.product
                 ).select_related('restaurant'):
                     needed_restaurants_for_product.append(
                         menu_item.restaurant.name
@@ -181,7 +179,7 @@ class Order(models.Model):
     status = models.CharField(
         max_length=4,
         choices=STATUS_CHOICES,
-         default='ACTD',
+        default='ACTD',
         db_index=True,
         verbose_name='Статус'
     )
@@ -223,13 +221,14 @@ class Order(models.Model):
         verbose_name='Комментарии'
     )
     objects = OrderQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
 
     def __str__(self):
         return '%s %s' % (self.firstname, self.lastname)
-    
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order,
@@ -243,12 +242,11 @@ class OrderItem(models.Model):
         verbose_name='Количество'
         )
     price = models.DecimalField(
-        verbose_name = 'Цена',
+        verbose_name='Цена',
         max_digits=8,
         decimal_places=2,
         validators=[MinValueValidator(0)]
     )
-    
+
     class Meta:
         ordering = ['quantity']
-    
