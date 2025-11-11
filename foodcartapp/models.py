@@ -137,11 +137,11 @@ class OrderQuerySet(models.QuerySet):
     def returns_ready_restaurants(self):
         for order in self:
             needed_restaurants = []
-            for product in order.products.all():
+            for product in order.products.all().select_related('product'):
                 needed_restaurants_for_product = []
                 for menu_item in RestaurantMenuItem.objects.filter(
                     product = product.product
-                ):
+                ).select_related('restaurant'):
                     needed_restaurants_for_product.append(
                         menu_item.restaurant.name
                         )

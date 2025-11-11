@@ -3,12 +3,14 @@ from django.conf import settings
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 from geopy import distance
 import requests
 
+from addresses.models import Address
 from foodcartapp.models import Product, Restaurant, Order
 
 
@@ -66,21 +68,32 @@ def is_manager(user):
 
 def fetch_coordinates(apikey, address):
     try:
-        base_url = "https://geocode-maps.yandex.ru/1.x"
-        response = requests.get(base_url, params={
-            "geocode": address,
-            "apikey": apikey,
-            "format": "json",
-        })
-        response.raise_for_status()
-        found_places = response.json()['response']['GeoObjectCollection']\
-            ['featureMember']
+        try:
+            address = Address.objects.get(address=address)
+            lon = address.lon
+            lat = address.lat
+        except ObjectDoesNotExist:
+            base_url = "https://geocode-maps.yandex.ru/1.x"
+            response = requests.get(base_url, params={
+                "geocode": address,
+                "apikey": apikey,
+                "format": "json",
+            })
+            response.raise_for_status()
+            found_places = response.json()['response']['GeoObjectCollection']\
+                ['featureMember']
 
-        if not found_places:
-            return None
+            if not found_places:
+                return None
 
-        most_relevant = found_places[0]
-        lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+            most_relevant = found_places[0]
+            lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+
+            Address.objects.create(
+                address=address,
+                lon=lon,
+                lat=lat
+            )
         return lat, lon
     except requests.HTTPError:
         return None
@@ -139,5 +152,6 @@ def view_restaurants(request):
 def view_orders(request):
     return render(request, template_name='order_items.html', context={
         'orders': fetch_orders_with_distance_to_restaurants(
-            Order.objects.returns_order_price().returns_ready_restaurants())
+            Order.objects.returns_order_price().returns_ready_restaurants()
+            )
     })
