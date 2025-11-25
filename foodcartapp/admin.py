@@ -152,6 +152,7 @@ class OrderAdmin(admin.ModelAdmin):
         if url_has_allowed_host_and_scheme(request.GET['next'],
                                            request.META['HTTP_HOST']):
             res = super().response_change(request, obj)
+            
             if "next" in request.GET:
                 return HttpResponseRedirect(request.GET['next'])
             else:

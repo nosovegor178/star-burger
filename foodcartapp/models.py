@@ -1,3 +1,4 @@
+from collections import defaultdict
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum, F
@@ -133,25 +134,27 @@ class OrderQuerySet(models.QuerySet):
         )
 
     def returns_ready_restaurants(self):
+        menu_items = RestaurantMenuItem.objects.all()
+        restaurants_with_products = defaultdict(list)
+        for item in menu_items:
+            restaurants_with_products[item.restaurant].append(item.product)
         for order in self:
-            needed_restaurants = []
-            for product in order.products.all().select_related('product'):
-                needed_restaurants_for_product = []
-                for menu_item in RestaurantMenuItem.objects.filter(
-                    product=product.product
-                ).select_related('restaurant'):
-                    needed_restaurants_for_product.append(
-                        menu_item.restaurant.name
-                        )
-                needed_restaurants.append(set(needed_restaurants_for_product))
-            ready_restaurants = list(set.intersection(*needed_restaurants))
+            order_products = [product.product for product in order.\
+                              products.select_related('product')]
+            ready_restaurants = []
+            for restaurant, r_products in restaurants_with_products.items():
+                print(r_products, order_products)
+                if all(elem in r_products for elem in order_products):
+                    print('1')
+                    ready_restaurants.append(restaurant.name)
             order.ready_restaurants = ready_restaurants
         return self
 
 
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('ACTD', 'Принятый'),
+        ('NPRC', 'Не обработан'),
+        ('ACTD', 'Принят'),
         ('PRCD', 'Готовится'),
         ('DLVR', 'Доставляется'),
         ('DLRD', 'Выполнен')
@@ -171,33 +174,33 @@ class Order(models.Model):
     phonenumber = PhoneNumberField(
         region='RU',
         verbose_name='Номер телефона',
+        db_index=True
     )
     address = models.CharField(
         verbose_name='Адрес',
-        max_length=100
+        max_length=100,
+        db_index=True
     )
     status = models.CharField(
         max_length=4,
         choices=STATUS_CHOICES,
-        default='ACTD',
+        default='NPRC',
         db_index=True,
         verbose_name='Статус'
     )
     payment_way = models.CharField(
         max_length=4,
         choices=PAYMENT_WAY_CHOICES,
-        default='ELCT',
         db_index=True,
-        verbose_name='Способ оплаты'
-    )
-    restaurant = models.CharField(
-        max_length=4,
-        choices=[(f'{num+1}RES', n[0]) for num, n in enumerate(list(
-            Restaurant.objects.all().values_list('name')
-            ))],
-        db_index=True,
-        verbose_name='Какой ресторан будет готовить',
+        verbose_name='Способ оплаты',
         blank=True
+    )
+    restaurant = models.ForeignKey(
+        Restaurant,
+        related_name='orders',
+        verbose_name='Ресторан',
+        null=True,
+        on_delete=models.CASCADE
     )
     registered_at = models.DateTimeField(
         verbose_name='Принят',
@@ -207,6 +210,7 @@ class Order(models.Model):
     called_at = models.DateTimeField(
         verbose_name='Звонок совершен',
         null=True,
+        blank=True,
         db_index=True
     )
     delivered_at = models.DateTimeField(
@@ -233,11 +237,13 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order,
                               related_name='products',
+                              verbose_name='Заказ',
                               on_delete=models.CASCADE)
     product = models.ForeignKey(Product,
+                                related_name='order_items',
+                                verbose_name='Продукт',
                                 on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(
-        default=0,
         db_index=True,
         verbose_name='Количество'
         )

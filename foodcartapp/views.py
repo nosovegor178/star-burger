@@ -64,8 +64,7 @@ def product_list_api(request):
 
 
 class OrderItemSerializer(Serializer):
-    max_id = Product.objects.aggregate(Max('id'))['id__max']
-    product = IntegerField(min_value=1, max_value=max_id)
+    product = IntegerField(min_value=1)
     quantity = IntegerField(min_value=1)
 
 
