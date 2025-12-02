@@ -69,8 +69,6 @@ class OrderItemSerializer(Serializer):
 
 
 class OrderSerializer(ModelSerializer):
-    order_sum = DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    phonenumber = PhoneNumberField()
     id = IntegerField(read_only=True)
 
     class Meta:
@@ -79,8 +77,7 @@ class OrderSerializer(ModelSerializer):
                   'firstname',
                   'lastname',
                   'phonenumber',
-                  'address',
-                  'order_sum']
+                  'address']
 
 
 @api_view(['POST'])

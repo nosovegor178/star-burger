@@ -143,9 +143,7 @@ class OrderQuerySet(models.QuerySet):
                               products.select_related('product')]
             ready_restaurants = []
             for restaurant, r_products in restaurants_with_products.items():
-                print(r_products, order_products)
                 if all(elem in r_products for elem in order_products):
-                    print('1')
                     ready_restaurants.append(restaurant.name)
             order.ready_restaurants = ready_restaurants
         return self

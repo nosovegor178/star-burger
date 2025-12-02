@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
-class Address(models.Model):
+class Location(models.Model):
     address = models.CharField(max_length=70,
                                unique=True,
                                verbose_name='Адрес места')
