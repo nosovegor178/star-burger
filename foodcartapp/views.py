@@ -70,14 +70,21 @@ class OrderItemSerializer(Serializer):
 
 class OrderSerializer(ModelSerializer):
     id = IntegerField(read_only=True)
-
+    order_items = OrderItemSerializer(many=True)
     class Meta:
         model = Order
         fields = ['id',
                   'firstname',
                   'lastname',
                   'phonenumber',
-                  'address']
+                  'address',
+                  'order_items']
+    def create(self, validated_data):
+        order_items_data = validated_data.pop('order_items')
+        order = Order.objects.create(**validated_data)
+        for item_data in order_items_data:
+            OrderItem.objects.create(order=order, **item_data)
+        return order
 
 
 @api_view(['POST'])

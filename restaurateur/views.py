@@ -11,6 +11,7 @@ from geopy import distance
 import requests
 
 from addresses.models import Location
+from addresses.views import fetch_coordinates
 from foodcartapp.models import Product, Restaurant, Order
 
 
@@ -66,41 +67,11 @@ def is_manager(user):
     return user.is_staff  # FIXME replace with specific permission
 
 
-def fetch_coordinates(apikey, address):
-    try:
-        base_url = "https://geocode-maps.yandex.ru/1.x"
-        response = requests.get(base_url, params={
-            "geocode": address,
-            "apikey": apikey,
-            "format": "json",
-        })
-        response.raise_for_status()
-        found_places = response.json()['response']['GeoObjectCollection']\
-            ['featureMember']
-
-        if not found_places:
-            return None
-
-        most_relevant = found_places[0]
-        lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-
-        Location.objects.create(
-            address=address,
-            lon=lon,
-            lat=lat
-        )
-        return lat, lon
-    except requests.HTTPError:
-        return None
-
-
 def fetch_orders_with_distance_to_restaurants(orders):
-    # locations_in_base = Location.objects.all()
     fetched_locations = {
         loc.address: loc
         for loc in Location.objects.all()
     }
-    # addresses_in_base = locations_in_base.values_list('address')
     for order in orders:
         if order.address in fetched_locations.keys():
             location = fetched_locations[order.address]
