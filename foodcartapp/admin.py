@@ -139,16 +139,13 @@ class OrderAdmin(admin.ModelAdmin):
     form = OrderAdminForm
 
     def response_change(self, request, obj):
-        res = super().response_change(request, obj)
-        if url_has_allowed_host_and_scheme(request.GET['next'],
-                                           request.META['HTTP_HOST']):
-            if "next" in request.GET:
-                return HttpResponseRedirect(request.GET['next'])
-            else:
-                return res
+        next_url = request.GET.get("next")
+        if next_url and url_has_allowed_host_and_scheme(next_url, request.META.get('HTTP_HOST')):
+            res = super().response_change(request, obj)
+            return HttpResponseRedirect(next_url)
         else:
-            return res
-
+            return super().response_change(request, obj)
+    
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:

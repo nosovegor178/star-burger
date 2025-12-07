@@ -134,7 +134,7 @@ class OrderQuerySet(models.QuerySet):
         )
 
     def returns_ready_restaurants(self):
-        menu_items = RestaurantMenuItem.objects.all()
+        menu_items = RestaurantMenuItem.objects.all().select_related('restaurant')
         restaurants_with_products = defaultdict(list)
         for item in menu_items:
             restaurants_with_products[item.restaurant].append(item.product)

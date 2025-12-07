@@ -68,10 +68,17 @@ def is_manager(user):
 
 
 def fetch_orders_with_distance_to_restaurants(orders):
+    order_addresses = {order.address for order in orders}
+    restaurant_addresses = set()
+    for order in orders:
+        for restaurant in order.ready_restaurants:
+            restaurant_addresses.add(restaurant)
+    needed_addresses = list(order_addresses | restaurant_addresses)
     fetched_locations = {
         loc.address: loc
-        for loc in Location.objects.all()
+        for loc in Location.objects.filter(address__in=needed_addresses)
     }
+
     for order in orders:
         if order.address in fetched_locations.keys():
             location = fetched_locations[order.address]
@@ -84,9 +91,7 @@ def fetch_orders_with_distance_to_restaurants(orders):
                                             order.address)
         restaurants = order.ready_restaurants
         if not address_coords:
-            for i, restaurant in enumerate(restaurants):
-                restaurants[i] += ', ошибка определения координат'
-            order.ready_restaurants = restaurants
+            order.ready_restaurants = 'Адрес не найден'
         else:
             for i, restaurant in enumerate(restaurants):
                 if restaurant in fetched_locations.keys():
@@ -102,8 +107,8 @@ def fetch_orders_with_distance_to_restaurants(orders):
                     restaurants[i] += ', ошибка определения координат'
                 else:
                     restaurants[i] += ', {} км'.format(
-                        distance.distance(restaurant_coords,
-                                          address_coords).km
+                        int(distance.distance(restaurant_coords,
+                                          address_coords).km)
                     )
             order.ready_restaurants = sorted(restaurants)
     return orders
@@ -140,6 +145,7 @@ def view_restaurants(request):
 def view_orders(request):
     return render(request, template_name='order_items.html', context={
         'orders': fetch_orders_with_distance_to_restaurants(
-            Order.objects.returns_order_price().returns_ready_restaurants()
+            Order.objects.exclude(status='DLRD').select_related('restaurant')\
+                .returns_order_price().returns_ready_restaurants()
             )
     })
