@@ -130,7 +130,7 @@ class RestaurantMenuItem(models.Model):
 class OrderQuerySet(models.QuerySet):
     def returns_order_price(self):
         return self.annotate(
-            order_sum=Sum(F('products__price') * F('products__quantity'))
+            order_sum=Sum(F('order_items__price') * F('order_items__quantity'))
         )
 
     def returns_ready_restaurants(self):
@@ -140,7 +140,7 @@ class OrderQuerySet(models.QuerySet):
             restaurants_with_products[item.restaurant].append(item.product)
         for order in self:
             order_products = [product.product for product in order.\
-                              products.select_related('product')]
+                              order_items.select_related('product')]
             ready_restaurants = []
             for restaurant, r_products in restaurants_with_products.items():
                 if all(elem in r_products for elem in order_products):
@@ -197,6 +197,7 @@ class Order(models.Model):
         Restaurant,
         related_name='orders',
         verbose_name='Ресторан',
+        blank=True,
         null=True,
         on_delete=models.CASCADE
     )
@@ -234,7 +235,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order,
-                              related_name='products',
+                              related_name='order_items',
                               verbose_name='Заказ',
                               on_delete=models.CASCADE)
     product = models.ForeignKey(Product,

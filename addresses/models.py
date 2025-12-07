@@ -7,10 +7,14 @@ class Location(models.Model):
                                verbose_name='Адрес места')
     lat = models.DecimalField(max_digits=11,
                               decimal_places=8,
-                              verbose_name='Широта')
+                              verbose_name='Широта',
+                              blank=True,
+                              null=True)
     lon = models.DecimalField(max_digits=11,
                               decimal_places=8,
-                              verbose_name='Долгота')
+                              verbose_name='Долгота',
+                              blank=True,
+                              null=True)
     request_date = models.DateField(
         default=timezone.now,
         verbose_name='Дата запроса к геокодеру'

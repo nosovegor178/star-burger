@@ -69,7 +69,6 @@ class OrderItemSerializer(Serializer):
 
 
 class OrderSerializer(ModelSerializer):
-    id = IntegerField(read_only=True)
     order_items = OrderItemSerializer(many=True, read_only=True)
     class Meta:
         model = Order
