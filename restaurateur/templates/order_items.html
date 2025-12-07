@@ -42,7 +42,7 @@
             <td>Готовит {{ order.get_restaurant_display }}</td>
           {% elif order.ready_restaurants %}
             {% if order.ready_restaurants == 'Адрес не найден' %}
-              <td>order.ready_restaurants</td>
+              <td>{{ order.ready_restaurants }}</td>
             {% else %}
               <td>
                 <details>
